@@ -3,11 +3,13 @@ module Webpush
   #
   # @attr_reader [OpenSSL::PKey::EC] :curve the OpenSSL elliptic curve instance
   class VapidKey
+    CURVE_NAME = 'prime256v1'
+
     # Create a VapidKey instance from encoded elliptic curve public and private keys
     #
     # @return [Webpush::VapidKey] a VapidKey instance for the given public and private keys
     def self.from_keys(public_key, private_key)
-      key = new
+      key = new(generate_key: false)
       key.public_key = public_key
       key.private_key = private_key
 
@@ -16,9 +18,9 @@ module Webpush
 
     attr_reader :curve
 
-    def initialize
-      @curve = OpenSSL::PKey::EC.new('prime256v1')
-      @curve.generate_key
+    def initialize generate_key: true
+      @curve = OpenSSL::PKey::EC.new(CURVE_NAME)
+      @curve.generate_key if generate_key
     end
 
     # Retrieve the encoded elliptic curve public key for VAPID protocol
@@ -43,7 +45,8 @@ module Webpush
     end
 
     def public_key=(key)
-      curve.public_key = OpenSSL::PKey::EC::Point.new(group, to_big_num(key))
+      curve.public_key = OpenSSL::PKey::EC::Point.new(group || OpenSSL::PKey::EC::Group.new(CURVE_NAME),
+                                                      to_big_num(key))
     end
 
     def private_key=(key)
